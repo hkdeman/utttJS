@@ -1,0 +1,23 @@
+{
+  "name": "@socialgorithm/uttt-player",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Initial UTTT Player for the algorithm competition",
+  "main": "player.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aurbano/uttt-player.git"
+  },
+  "author": "Alejandro U. Alvarez",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/aurbano/uttt-player/issues"
+  },
+  "homepage": "https://github.com/aurbano/uttt-player#readme",
+  "dependencies": {
+    "@socialgorithm/ultimate-ttt": "^4.19.0"
+  }
+}
