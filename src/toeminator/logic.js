@@ -1,35 +1,36 @@
 const UTTT = require('@socialgorithm/ultimate-ttt').default;
 const ME = require("@socialgorithm/ultimate-ttt/dist/model/constants").ME;
 const OPPONENT = require("@socialgorithm/ultimate-ttt/dist/model/constants").OPPONENT;
+const tf = require('../../scripts/tf');
 
 UCBCONSTANT = 5
 
-let parse = function(board){
-    let grid = [];
-    for(let gridX=0; gridX<3;gridX++) {
-        for(let gridY=0; gridY<3;gridY++) {
-            let subGrid = [];
-            for(let subGridX=0; subGridX<3;subGridX++) {
-                for(let subGridY=0; subGridY<3;subGridY++) {
-                    let value = board[gridX][gridY].board[subGridX][subGridY].player;
-                    subGrid.push(value!= undefined ? value : 0);
-                }
-            }
-            grid.push(subGrid);
-        }
-    }
-    return grid;
-}
+// let parse = function(board){
+//     let grid = [];
+//     for(let gridX=0; gridX<3;gridX++) {
+//         for(let gridY=0; gridY<3;gridY++) {
+//             let subGrid = [];
+//             for(let subGridX=0; subGridX<3;subGridX++) {
+//                 for(let subGridY=0; subGridY<3;subGridY++) {
+//                     let value = board[gridX][gridY].board[subGridX][subGridY].player;
+//                     subGrid.push(value!= undefined ? value : 0);
+//                 }
+//             }
+//             grid.push(subGrid);
+//         }
+//     }
+//     return grid;
+// }
 
-
-let Turns = { X:1, O:2, Empty: 0};
-let GameStates = { WIN: 1, LOSE:-1, DRAW: 0.5, NOT_DONE: 0};
-let current_milli_seconds = function() { return Date.now(); };
-let WINPOSSES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-let switchTurns = function (turn) { if (turn==Turns.X) return Turns.O; else if(turn==Turns.O) return Turns.X; return Turns.Empty;};
-let getAllIndexes = function(arr,val) { let indexes = []; i = -1; while ((i=arr.indexOf(val,i+1))!=-1) indexes.push(i); return indexes; };
-let discreteToMoves = { 0:[0,0], 1:[0,1], 2:[0,2], 3:[1,0], 4:[1,1], 5:[1,2], 6:[2,0], 7:[2,1],8:[2,2]};
-let movesToDiscrete = {"0,0":0,"0,1":1,"0,2":2,"1,0":3,"1,1":4,"1,2":5,"2,0":6,"2,1":7,"2,2":8};
+let Turns = { X: 1, O: 2, Empty: 0 };
+let GameStates = { WIN: 1, LOSE: -1, DRAW: 0.5, NOT_DONE: 0 };
+let current_milli_seconds = function () { return Date.now(); };
+let WINPOSSES = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
+let switchTurns = function (turn) { if (turn == Turns.X) return Turns.O; else if (turn == Turns.O) return Turns.X; return Turns.Empty; };
+let getAllIndexes = function (arr, val) { let indexes = []; i = -1; while ((i = arr.indexOf(val, i + 1)) != -1) indexes.push(i); return indexes; };
+let discreteToMoves = { 0: [0, 0], 1: [0, 1], 2: [0, 2], 3: [1, 0], 4: [1, 1], 5: [1, 2], 6: [2, 0], 7: [2, 1], 8: [2, 2] };
+let movesToDiscrete = { "0,0": 0, "0,1": 1, "0,2": 2, "1,0": 3, "1,1": 4, "1,2": 5, "2,0": 6, "2,1": 7, "2,2": 8 };
+let cloneBoard = function (board) { return board.map(function (arr) { return arr.slice(); }); }
 
 class Node {
     constructor(parent, turn, move) {
@@ -50,24 +51,24 @@ class Node {
     getChildren() { return this.children; }
     getWins() { return this.wins; }
     getVisits() { return this.visits; }
-    getUCBValue() { return (this.wins/this.visits) + Math.sqrt(UCBCONSTANT*Math.log(this.parent.getVisits() / this.visits)); }
+    getUCBValue() { return (this.wins / this.visits) + Math.sqrt(UCBCONSTANT * Math.log(this.parent.getVisits() / this.visits)); }
     setGameOver() { this.isGameOver = true; this.setAsDesirable(1); }
-    getScore() { return this.wins/this.visits; }
+    getScore() { return this.wins / this.visits; }
     getString() { return this.move.toString(); }
     addChild(move) { let child = new Node(this, switchTurns(this.turn), move); this.children.push(child); return child; }
     smallBoardWon() { this.setAsDesirable(0.5); }
-    setAsDesirable(value, CONST=1) { if(!this.isDesirable) { this.wins+=value*CONST; this.isDesirable=true;} this.visits=1;}
-    updateStats(gameState) { 
-        if(gameState == GameStates.WIN) this.wins+=1;
-        else if(gameState==GameStates.LOSE) this.wins-=1; 
-        else if(gameState == GameStates.DRAW) this.wins+=0.5;
-        this.visits+=1;
+    setAsDesirable(value, CONST = 1) { if (!this.isDesirable) { this.wins += value * CONST; this.isDesirable = true; } this.visits = 1; }
+    updateStats(gameState) {
+        if (gameState == GameStates.WIN) this.wins += 1;
+        else if (gameState == GameStates.LOSE) this.wins -= 1;
+        else if (gameState == GameStates.DRAW) this.wins += 0.5;
+        this.visits += 1;
     }
 }
 
 class Tree {
     constructor(turn) {
-         this.root = new Node(null, turn, null);
+        this.root = new Node(null, turn, null);
     }
     setRoot(node) { this.root = node; }
     getRoot() { return this.root; }
@@ -81,12 +82,12 @@ class TicTacToe {
 
     getGridAsList() { return this.grid; }
     getWinner() { return this.winner; }
-    getPositions(player) { return getAllIndexes(this.grid,player); } 
+    getPositions(player) { return getAllIndexes(this.grid, player); }
     getFreePositions() { return !this.didSomeoneWin() ? this.getPositions(0) : []; }
     isBoardFull() { return this.getFreePositions().length == 0; }
 
     move(turn, pos) {
-        if(this.grid[pos]==0 && !this.isGameDone()) {
+        if (this.grid[pos] == 0 && !this.isGameDone()) {
             this.grid[pos] = turn;
             return true;
         }
@@ -98,9 +99,9 @@ class TicTacToe {
         WINPOSSES.forEach(poses => {
             let contains = true;
             poses.forEach(pos => {
-                if (player.indexOf(pos)==-1) contains = false; 
-            })
-            if(contains) {
+                if (player.indexOf(pos) == -1) contains = false;
+            });
+            if (contains) {
                 won = true;
                 return;
             }
@@ -111,11 +112,11 @@ class TicTacToe {
     didSomeoneWin() {
         let xPos = this.getPositions(1); // Turns.X
         let oPos = this.getPositions(2); // Turns.O
-        
+
         let xWin = this.didWin(xPos);
         let oWin = this.didWin(oPos);
 
-        if(xWin || oWin) return true;
+        if (xWin || oWin) return true;
         return false;
     }
 
@@ -126,9 +127,9 @@ class TicTacToe {
         let xWin = this.didWin(xPos);
         let oWin = this.didWin(oPos);
 
-        if(xWin) { this.winner = 1; return true; }
-        else if(oWin) { this.winner = 2; return true; }
-        else if(this.isBoardFull()) return true;
+        if (xWin) { this.winner = 1; return true; }
+        else if (oWin) { this.winner = 2; return true; }
+        else if (this.isBoardFull()) return true;
         return false;
     }
 }
@@ -136,7 +137,7 @@ class TicTacToe {
 class UltimateTicTacToe {
     constructor(givenBoard, lastTurn) {
         this.board = [];
-        givenBoard.forEach(grid=> {
+        givenBoard.forEach(grid => {
             this.board.push(new TicTacToe(grid))
         });
         this.winner = null;
@@ -153,41 +154,40 @@ class UltimateTicTacToe {
 
     isBoardFull() {
         let full = true;
-         this.board.forEach(ttt=> {
-            if(!ttt.isGameDone()) {
+        this.board.forEach(ttt => {
+            if (!ttt.isGameDone()) {
                 full = false;
                 return false;
             }
-         });
-         return full;
+        });
+        return full;
     }
-    
+
     getBoardAsList() {
         let tempArr = [];
-        this.board.forEach(ttt=> { tempArr.push(ttt.getGridAsList()); })
+        this.board.forEach(ttt => { tempArr.push(ttt.getGridAsList()); })
         return tempArr;
     }
 
     getFreePositions() {
         let freeMoves = [];
-        if(this.lastTurn == null) {
-            this.board.forEach((ttt,index)=> {
-                ttt.getFreePositions().forEach((pos)=> {
-                    freeMoves.push([index,pos]);
+        if (this.lastTurn == null) {
+            this.board.forEach((ttt, index) => {
+                ttt.getFreePositions().forEach((pos) => {
+                    freeMoves.push([index, pos]);
                 });
             });
         } else {
-            if (this.board[this.lastTurn].isGameDone()) {
-                this.board.forEach((ttt,index)=> {
-                    ttt.getFreePositions().forEach((pos)=> {
-                        freeMoves.push([index,pos]);
-                    });
-                });
-            } else {
-                this.board[this.lastTurn].getFreePositions().forEach((pos)=> {
-                    freeMoves.push([this.lastTurn,pos]);
-                });
-            }
+            // if (this.board[this.lastTurn].isGameDone()) {
+            //     this.board.forEach((ttt,index)=> {
+            //         ttt.getFreePositions().forEach((pos)=> {
+            //             freeMoves.push([index,pos]);
+            //         });
+            //     });
+            // } else {
+            this.board[this.lastTurn].getFreePositions().forEach((pos) => {
+                freeMoves.push([this.lastTurn, pos]);
+            });
         }
         return freeMoves;
     }
@@ -195,7 +195,7 @@ class UltimateTicTacToe {
     getPositions(player) {
         let positions = [];
         this.board.forEach((ttt, index) => {
-            if(ttt.isGameDone() && ttt.getWinner() == player) positions.push(index);
+            if (ttt.isGameDone() && ttt.getWinner() == player) positions.push(index);
         });
         return positions;
     }
@@ -224,9 +224,9 @@ class UltimateTicTacToe {
         WINPOSSES.forEach(poses => {
             let contains = true;
             poses.forEach(pos => {
-                if (player.indexOf(pos)==-1) contains = false; 
+                if (player.indexOf(pos) == -1) contains = false;
             })
-            if(contains) {
+            if (contains) {
                 won = true;
                 return false;
             }
@@ -241,15 +241,15 @@ class UltimateTicTacToe {
         let xWin = this.didWin(xPos);
         let oWin = this.didWin(oPos);
 
-        if(xWin) { this.winner = 1; return true; }
-        else if(oWin) { this.winner = 2; return true; }
-        else if(this.isBoardFull()) return true;
+        if (xWin) { this.winner = 1; return true; }
+        else if (oWin) { this.winner = 2; return true; }
+        else if (this.isBoardFull()) return true;
         return false;
     }
 }
 
 class MCTS {
-    constructor(board, lastTurn, turn= Turns.X, timeout=100, before = 1) {
+    constructor(board, lastTurn, turn = Turns.X, timeout = 100, before = 5) {
         this.turn = turn;
         this.board = board;
         this.clonedBoard = null;
@@ -264,11 +264,13 @@ class MCTS {
         if (this.mct == null) this.mct = new Tree(switchTurns(this.turn));
         else {
             let children = this.mct.getRoot().getChildren();
-            if(child.length!=0) {
+            if (children.length != 0) {
                 let contained = false;
                 let node = children[0];
                 children.forEach(childNode => {
-                    if (childNode.getMove() == this.clonedBoard.getPreviousMove()) {
+                    let cNM = childNode.getMove();
+                    let cPM = this.clonedBoard.getPreviousMove();
+                    if (cNM[0]==cPM[0] && cNM[1] == cPM[1]) {
                         contained = true;
                         node = childNode;
                     }
@@ -277,19 +279,19 @@ class MCTS {
                 });
             } else this.mct = new Tree(switchTurns(this.turn));
         }
-    
+
         let startTime = current_milli_seconds();
         while (current_milli_seconds() - startTime < this.timeout - this.before) {
-            this.clonedBoard = new UltimateTicTacToe(this.board, this.lastTurn);
+            let newBoard = cloneBoard(this.board);
+            this.clonedBoard = new UltimateTicTacToe(newBoard, this.lastTurn);
             this.rollOut(this.expansion(this.selection(this.mct.getRoot())));
         }
         return this.chooseBestNextMove();
     }
 
     selection(node) {
-        let children = node.getChildren();
-        while (this.clonedBoard.getFreePositions().length == children.length && children.length!=0) {
-            node = this.selectUCBChild(children);
+        while (this.clonedBoard.getFreePositions().length == node.getChildren().length && node.getChildren().length != 0) {
+            node = this.selectUCBChild(node.getChildren());
             this.playClonedBoard(node.getMove(), node.getTurn());
         }
         return node;
@@ -301,11 +303,12 @@ class MCTS {
         if (won) node.setGameOver();
         else {
             let poses = this.clonedBoard.getFreePositions();
-            for(let i=0;i<poses.length;i++) {
+            for (let i = 0; i < poses.length; i++) {
                 let move = poses[i];
                 let contained = false;
-                node.getChildren().forEach(child=> {
-                    if (child.getMove()==move) contained = true;
+                node.getChildren().forEach(child => {
+                    let childMove = child.getMove();
+                    if (childMove[0] == move[0] && childMove[1] == move[1]) contained = true;
                 });
 
                 if (!contained) {
@@ -314,7 +317,7 @@ class MCTS {
                 }
             };
             node = node.addChild(nextMove);
-            this.depth+=1;
+            this.depth += 1;
             this.playClonedBoard(nextMove, node.getTurn());
         }
         return node;
@@ -322,10 +325,10 @@ class MCTS {
 
     rollOut(node) {
         let currSimTurn = switchTurns(node.getTurn());
-        
-        while(!this.clonedBoard.isGameDone()) {
+
+        while (!this.clonedBoard.isGameDone()) {
             let moves = this.clonedBoard.getFreePositions();
-            let move = moves[Math.floor(Math.random()*moves.length)];
+            let move = moves[Math.floor(Math.random() * moves.length)];
             this.playClonedBoard(move, currSimTurn);
             currSimTurn = switchTurns(currSimTurn);
         }
@@ -337,15 +340,22 @@ class MCTS {
         let index = 0;
         while (true) {
             if (gameState == GameStates.DRAW) node.updateStats(gameState);
-            else if (index % 2 == 0 ) node.updateStats(gameState);
+            else if (index % 2 == 0) node.updateStats(gameState);
             else node.updateStats(gameState == GameStates.WIN ? GameStates.LOSE : GameStates.WIN);
             node = node.getParent();
             if (node == null) break;
-            index+=1;
+            index += 1;
         }
     }
 
-    selectUCBChild(nodes) { return nodes.sort(function(a,b) { return a.getUCBValue() - b.getUCBValue() })[nodes.length-1]; }
+    selectUCBChild(nodes) {
+        let bestNode = nodes[0];
+        nodes.forEach(node => {
+            if (node.getUCBValue() > bestNode.getUCBValue()) bestNode = node;
+        });
+        return bestNode;
+    }
+
     playClonedBoard(move, turn) { this.clonedBoard.move(turn, move[0], move[1]); }
     getDepth() { return this.depth; }
 
@@ -353,8 +363,8 @@ class MCTS {
         let children = this.mct.getRoot().getChildren();
         let bestScore = children[0].getScore();
         let bestMove = children[0].getMove();
-        children.forEach(child=> {
-            if (child.getScore()> bestScore) {
+        children.forEach(child => {
+            if (child.getScore() > bestScore) {
                 bestMove = child.getMove();
                 bestScore = child.getScore();
             }
@@ -380,67 +390,92 @@ class MCTS {
 
 
 class GameLogic {
-  constructor(player, size = 3){
-    if(!player || player < ME || player > OPPONENT){
-      throw new Error('Invalid player');
+    constructor(player, size = 3) {
+        if (!player || player < ME || player > OPPONENT) {
+            throw new Error('Invalid player');
+        }
+
+        this.size = size;
+        this.player = player;
+        this.opponent = 1 - player;
+
+        this.init();
     }
 
-    this.size = size;
-    this.player = player;
-    this.opponent = 1 - player;
+    /* ----- Required methods ----- */
 
-    this.init();
-  }
+    init() {
+        this.game = new UTTT(this.size);
+        this.mainBoard = [[0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        ];
+        // const model = tf.sequential();
+        // model.add(tf.layers.dense({units: 1, inputShape: [1]}));
+        // model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
 
-  /* ----- Required methods ----- */
+        // // Generate some synthetic data for training.
+        // const xs = tf.tensor2d([[1], [2], [3], [4]], [4, 1]);
+        // const ys = tf.tensor2d([[1], [3], [5], [7]], [4, 1]);
 
-  init(){
-    this.game = new UTTT(this.size);
-}
-
-  addOpponentMove(board, move) {
-    try {
-        this.game = this.game.addOpponentMove(board, move);
-    } catch (e) {
-        console.error('-------------------------------');
-        console.error("\n"+'AddOpponentMove: Game probably already over when adding', board, move, e);
-        console.error("\n"+this.game.prettyPrint());
-        console.error("\n"+this.game.stateBoard.prettyPrint(true));
-        console.error('-------------------------------');
-        throw new Error(e);
+        // // Run inference with predict().
+        // model.predict(tf.tensor2d([[5]], [1, 1])).print();
     }
-  }
 
-  addMove(board, move){
-    try {
-        this.game = this.game.addMyMove(board, move);
-    } catch (e) {
-        console.error('-------------------------------');
-        console.error("\n"+'AddMyMove: Game probably already over when adding', board, move, e);
-        console.error("\n"+this.game.prettyPrint());
-        console.error("\n"+this.game.stateBoard.prettyPrint(true));
-        console.error('-------------------------------');
-        throw new Error(e);
+    addOpponentMove(board, move) {
+        try {
+            this.game = this.game.addOpponentMove(board, move);
+            let parsedBoard = movesToDiscrete[board.toString()];
+            let parsedMove = movesToDiscrete[move.toString()];
+            this.mainBoard[parsedBoard][parsedMove] = 2;
+        } catch (e) {
+            console.error('-------------------------------');
+            console.error("\n" + 'AddOpponentMove: Game probably already over when adding', board, move, e);
+            console.error("\n" + this.game.prettyPrint());
+            console.error("\n" + this.game.stateBoard.prettyPrint(true));
+            console.error('-------------------------------');
+            throw new Error(e);
+        }
     }
-  }
 
-  getMove(){
-    let lastTurn = this.game.nextBoard;
-    if (lastTurn!=undefined) {
-        lastTurn = movesToDiscrete[lastTurn.toString()];
-    } else {
-        lastTurn = null;
+    addMove(board, move) {
+        try {
+            this.game = this.game.addMyMove(board, move);
+            let parsedBoard = movesToDiscrete[board.toString()];
+            let parsedMove = movesToDiscrete[move.toString()];
+            this.mainBoard[parsedBoard][parsedMove] = 1;
+        } catch (e) {
+            console.error('-------------------------------');
+            console.error("\n" + 'AddMyMove: Game probably already over when adding', board, move, e);
+            console.error("\n" + this.game.prettyPrint());
+            console.error("\n" + this.game.stateBoard.prettyPrint(true));
+            console.error('-------------------------------');
+            throw new Error(e);
+        }
     }
-    
-    let new_board = parse(this.game.board);
-    let mcts = new MCTS(new_board, lastTurn);
-    let move = mcts.run();
 
-    return {
-        board: discreteToMoves[move[0]],
-        move: discreteToMoves[move[1]]
-    };
-  }
+    getMove() {
+        let lastTurn = this.game.nextBoard;
+        if (lastTurn != undefined) {
+            lastTurn = movesToDiscrete[lastTurn.toString()];
+        } else {
+            lastTurn = null;
+        }
+
+        let mcts = new MCTS(this.mainBoard, lastTurn);
+        let move = mcts.run();
+
+        return {
+            board: discreteToMoves[move[0]],
+            move: discreteToMoves[move[1]]
+        };
+    }
 
 }
 
