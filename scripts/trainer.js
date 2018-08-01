@@ -1,4 +1,5 @@
 const tf = require('./tf');
+var fs = require('fs');
 
 
 UCBCONSTANT = 5
@@ -321,13 +322,32 @@ function playRandomGame(qval=0.9, stretch=1) {
 
 function getModel() {
     const model = tf.sequential();
-    model.add(tf.layers.dense({ units: 128, inputShape: [162,], activation: 'relu'}));
-    model.add(tf.layers.dense({ units: 256, activation: 'relu'}));
-    model.add(tf.layers.dense({ units: 128, activation: 'relu'}));
-    model.add(tf.layers.dense({ units: 2, activation: 'softmax'}));
+    model.add(tf.layers.dense({ units: 128, inputShape: [162,], activation: 'relu', name:'d1'}));
+    model.add(tf.layers.dense({ units: 256, activation: 'relu', name:'d2'}));
+    model.add(tf.layers.dense({ units: 128, activation: 'relu', name:'d3'}));
+    model.add(tf.layers.dense({ units: 2, activation: 'softmax', name:'d4'}));
     model.compile({ optimizer: 'rmsprop', loss: 'categoricalCrossentropy', metrics:['accuracy']});
-
     return model;
+}
+
+function save(data, filename) {
+    data = JSON.stringify(data);
+    fs.writeFile(filename, data, function(err) {
+        if(err) {
+            return console.log(err);
+        }
+        console.log(filename+" was saved!");
+    }); 
+}
+
+function saveWeights(model) {
+    let data = {
+        "d1": model.getLayer("d1").getWeights(),
+        "d2": model.getLayer("d2").getWeights(),
+        "d3": model.getLayer("d3").getWeights(),
+        "d4": model.getLayer("d4").getWeights(),
+    };
+    save(data, "weights.txt");
 }
 
 
@@ -344,13 +364,12 @@ async function train(games=10) {
     let xs = tf.tensor2d(features, [features.length, 162]);
     let ys = tf.tensor2d(labels, [labels.length, 2]);
     let now = current_milli_seconds();    
-    let history = model.fit(xs,ys).then(()=> {
-        console.log(current_milli_seconds()-now);
-        console.log(model.model.history);
-        // model.save('file:///tmp/uttt').then(()=> {
-        //     console.log("Model saved in tmp/uttt");
-        // });
-    });
+    await model.fit(xs,ys);
+    // console.log(await model.getLayer("d1").getWeights()[1].as1D().data());
+    // console.log(current_milli_seconds()-now);
+    // console.log(model.model.history);
+    // saveWeights(model);
+    tf.train.Saver("model");
 }
 
 train()
