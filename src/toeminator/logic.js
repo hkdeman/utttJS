@@ -270,7 +270,7 @@ class MCTS {
                 children.forEach(childNode => {
                     let cNM = childNode.getMove();
                     let cPM = this.clonedBoard.getPreviousMove();
-                    if (cNM[0]==cPM[0] && cNM[1] == cPM[1]) {
+                    if (cNM[0] == cPM[0] && cNM[1] == cPM[1]) {
                         contained = true;
                         node = childNode;
                     }
@@ -398,34 +398,23 @@ class GameLogic {
         this.size = size;
         this.player = player;
         this.opponent = 1 - player;
-
-        this.init();
     }
 
     /* ----- Required methods ----- */
 
-    init() {
+    async init() {
         this.game = new UTTT(this.size);
-        this.mainBoard = [[0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        this.mainBoard = [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
         ];
-        // const model = tf.sequential();
-        // model.add(tf.layers.dense({units: 1, inputShape: [1]}));
-        // model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
-
-        // // Generate some synthetic data for training.
-        // const xs = tf.tensor2d([[1], [2], [3], [4]], [4, 1]);
-        // const ys = tf.tensor2d([[1], [3], [5], [7]], [4, 1]);
-
-        // // Run inference with predict().
-        // model.predict(tf.tensor2d([[5]], [1, 1])).print();
     }
 
     addOpponentMove(board, move) {
