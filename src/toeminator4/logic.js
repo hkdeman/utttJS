@@ -3,7 +3,7 @@ const ME = require("@socialgorithm/ultimate-ttt/dist/model/constants").ME;
 const OPPONENT = require("@socialgorithm/ultimate-ttt/dist/model/constants").OPPONENT;
 const getCloseablePositions = require("./utils");
 
-UCBCONSTANT = 2
+UCBCONSTANT = 2;
 
 // let parse = function(board){
 //     let grid = [];
@@ -416,6 +416,7 @@ class GameLogic {
             [0, 0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0, 0],
         ];
+        this.index = 0;
     }
 
     addOpponentMove(board, move) {
@@ -424,6 +425,7 @@ class GameLogic {
             let parsedBoard = movesToDiscrete[board.toString()];
             let parsedMove = movesToDiscrete[move.toString()];
             this.mainBoard[parsedBoard][parsedMove] = 2;
+            this.index++;
         } catch (e) {
             console.error('-------------------------------');
             console.error("\n" + 'AddOpponentMove: Game probably already over when adding', board, move, e);
@@ -440,6 +442,7 @@ class GameLogic {
             let parsedBoard = movesToDiscrete[board.toString()];
             let parsedMove = movesToDiscrete[move.toString()];
             this.mainBoard[parsedBoard][parsedMove] = 1;
+            this.index++;
         } catch (e) {
             console.error('-------------------------------');
             console.error("\n" + 'AddMyMove: Game probably already over when adding', board, move, e);
@@ -451,11 +454,11 @@ class GameLogic {
     }
 
     getMove() {
-        // if(this.index < 20) {
-        //     return this.getDefenseBot();
-        // } else {
-        return this.getMCTSBot();
-        // }
+        if (this.index < 25 && this.index%4!=0) {
+            return this.getDefenseBot();
+        } else {
+            return this.getMCTSBot();
+        }
     }
 
     getMCTSBot() {
@@ -475,6 +478,7 @@ class GameLogic {
     }
 
     getDefenseBot(){
+        if (this.index==0) return {board: [1,1], move:[1,1]};
         const validBoards = this.game.getValidBoards();
         /**
          * Try to find either winning or losing positions
